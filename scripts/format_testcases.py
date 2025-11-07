@@ -110,17 +110,27 @@ def main():
         print("❌ Error: test-cases-response.json not found!")
         exit(1)
     
-    with open(response_file, 'r', encoding='utf-8') as f:
-        response = json.load(f)
+    try:
+        with open(response_file, 'r', encoding='utf-8') as f:
+            response = json.load(f)
+    except json.JSONDecodeError as e:
+        print(f"❌ Error: Invalid JSON - {e}")
+        exit(1)
+    
+    print(f"📥 API Response received")
+    print(f"   Status: {response.get('status')}")
     
     # Extract test cases
     test_cases = response.get('data', {}).get('content', [])
     
     if not test_cases:
         print("⚠️  No test cases found in response")
+        print(f"   Response keys: {list(response.keys())}")
+        if 'data' in response:
+            print(f"   Data keys: {list(response['data'].keys())}")
         return
     
-    print(f"📥 Found {len(test_cases)} test case(s)")
+    print(f"✅ Found {len(test_cases)} test case(s)")
     
     # Create output directory
     output_dir = Path('test-cases')
@@ -143,7 +153,8 @@ def main():
         with open(filename, 'w', encoding='utf-8') as f:
             f.write(content)
         
-        print(f"✅ Saved: {filename.name}")
+        desc = tc.get('description', 'Untitled')
+        print(f"   📝 {desc}")
     
     # Create index file
     metadata = response.get('data', {})
@@ -153,8 +164,12 @@ def main():
     with open(index_file, 'w', encoding='utf-8') as f:
         f.write(index_content)
     
-    print(f"📋 Created index: {index_file.name}")
-    print(f"\n✨ Done! Test cases saved to {output_dir}/")
+    print(f"📋 Created index file")
+    print(f"\n🎉 Successfully processed {len(test_cases)} test cases!")
+
+
+if __name__ == '__main__':
+    main()
 
 
 if __name__ == '__main__':

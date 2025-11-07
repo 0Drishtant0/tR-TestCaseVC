@@ -20,15 +20,18 @@ jobs:
         with:
           python-version: '3.11'
       
+      - name: Create test-cases directory
+        run: mkdir -p test-cases
+      
       - name: Fetch test cases from API
-        env:
-          AUTH_TOKEN: ${{ secrets.TESTRIGOR_AUTH_TOKEN }}
-          APP_ID: ${{ secrets.TESTRIGOR_APP_ID }}
         run: |
           curl -X GET \
-            -H "auth-token: ${AUTH_TOKEN}" \
-            "https://api2.testrigor.com/api/v1/apps/${APP_ID}/test_cases" \
+            -H "auth-token: 72e109d0-cd1c-4b32-b2df-1c11a8d56c24" \
+            "https://api2.testrigor.com/api/v1/apps/Hz3YmGnhiYqR3qhc7/test_cases" \
             -o test-cases-response.json
+          
+          echo "API Response:"
+          cat test-cases-response.json
       
       - name: Format test cases
         run: python scripts/format_testcases.py
@@ -37,14 +40,16 @@ jobs:
         run: |
           git config --local user.email "github-actions[bot]@users.noreply.github.com"
           git config --local user.name "github-actions[bot]"
-          git add test-cases/
+          
+          # Add all files including new ones
+          git add -A test-cases/
           
           # Only commit if there are changes
           if ! git diff --staged --quiet; then
             timestamp=$(date -u +"%Y-%m-%d %H:%M:%S UTC")
             git commit -m "Update test cases - ${timestamp}"
             git push
-            echo "Test cases updated successfully!"
+            echo "✅ Test cases updated successfully!"
           else
-            echo "No changes detected in test cases."
+            echo "ℹ️  No changes detected in test cases."
           fi
