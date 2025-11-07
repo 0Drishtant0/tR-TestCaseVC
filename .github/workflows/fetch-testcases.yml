@@ -1,0 +1,50 @@
+name: Fetch Test Cases
+
+on:
+  workflow_dispatch:  # Manual trigger
+  schedule:
+    - cron: '0 0 * * *'  # Daily at midnight (optional)
+
+jobs:
+  fetch-and-commit:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+      
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.11'
+      
+      - name: Fetch test cases from API
+        env:
+          AUTH_TOKEN: ${{ secrets.TESTRIGOR_AUTH_TOKEN }}
+          APP_ID: ${{ secrets.TESTRIGOR_APP_ID }}
+        run: |
+          curl -X GET \
+            -H "auth-token: ${AUTH_TOKEN}" \
+            "https://api2.testrigor.com/api/v1/apps/${APP_ID}/test_cases" \
+            -o test-cases-response.json
+      
+      - name: Format test cases
+        run: python scripts/format_testcases.py
+      
+      - name: Commit and push changes
+        run: |
+          git config --local user.email "github-actions[bot]@users.noreply.github.com"
+          git config --local user.name "github-actions[bot]"
+          git add test-cases/
+          
+          # Only commit if there are changes
+          if ! git diff --staged --quiet; then
+            timestamp=$(date -u +"%Y-%m-%d %H:%M:%S UTC")
+            git commit -m "Update test cases - ${timestamp}"
+            git push
+            echo "Test cases updated successfully!"
+          else
+            echo "No changes detected in test cases."
+          fi
